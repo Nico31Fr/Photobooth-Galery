@@ -29,6 +29,8 @@ automatically generates thumbnails and display-sized images.
 - `install_galery_En.sh`: English version of the gallery installation script.
 - `install-photomaton.sh`: configures the Ethernet link and photo
   synchronization service on the photobooth Raspberry Pi.
+- `install-photobooth_En.sh`: English version of the photobooth installation
+  script.
 
 ## Requirements
 
