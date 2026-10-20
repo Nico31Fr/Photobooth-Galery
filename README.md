@@ -1,57 +1,44 @@
-# Photobooth-Gallery
+# Photobooth Gallery
 
-Galerie photo locale pour un photomaton fonctionnant avec deux Raspberry Pi.
-Le Raspberry Pi « photomaton » envoie automatiquement les photos au Raspberry Pi
-« galerie », qui crée un point d’accès Wi-Fi et les affiche dans une galerie web.
+Local photo gallery for a photobooth system using two Raspberry Pis.
+The photobooth Raspberry Pi automatically sends photos to the gallery Raspberry
+Pi, which creates a Wi-Fi access point and displays the photos in a web gallery.
 
-This project provides a local photo gallery for a photobooth using two Raspberry
-Pis. The « photobooth » Raspberry Pi automatically sends photos to the « gallery »
-Raspberry Pi, which creates a Wi-Fi access point and displays them in a web gallery.
-
-## Fonctionnement / How it works
+## How it works
 
 ```text
-[Photomaton] -- Ethernet -- [Galerie] -- Wi-Fi -- [Téléphones]
-  pibooth                  point d'accès + portail + galerie web
+[Photobooth] -- Ethernet -- [Gallery] -- Wi-Fi -- [Phones]
+  pibooth                  access point + captive portal + web gallery
   rsync/SSH  ------------> /srv/galerie/photos
 ```
 
-| Équipement / Device | Interface | Adresse / Address | Fonction / Role |
+| Device | Interface | Address | Role |
 |---|---|---|---|
-| Galerie / Gallery | `eth0` | `192.168.50.1/24` | Liaison avec le photomaton / photobooth link |
-| Galerie / Gallery | `wlan0` | `192.168.4.1/24` | Point d'accès Wi-Fi / Wi-Fi access point |
-| Photomaton / Photobooth | `eth0` | `192.168.50.2/24` | Liaison avec la galerie / gallery link |
+| Gallery | `eth0` | `192.168.50.1/24` | Link to the photobooth |
+| Gallery | `wlan0` | `192.168.4.1/24` | Wi-Fi access point |
+| Photobooth | `eth0` | `192.168.50.2/24` | Link to the gallery |
 
-Le transfert est à sens unique, par SSH et `rsync`. Seules les images situées
-à la racine du dossier surveillé sont envoyées ; les sous-dossiers sont ignorés.
-La galerie génère automatiquement des miniatures et une version d'affichage.
+Photos are transferred one way using SSH and `rsync`. Only image files directly
+inside the watched directory are sent; subdirectories are ignored. The gallery
+automatically generates thumbnails and display-sized images.
 
-Transfer is one-way, using SSH and `rsync`. Only images directly inside the
-watched directory are sent; subdirectories are ignored. The gallery automatically
-generates thumbnails and display-sized images.
+## Contents
 
-## Contenu / Contents
+- `install-galerie.sh`: installs the Wi-Fi access point, captive portal, nginx,
+  and the FastAPI gallery on the gallery Raspberry Pi.
+- `install-photomaton.sh`: configures the Ethernet link and photo
+  synchronization service on the photobooth Raspberry Pi.
 
-- `install-galerie.sh` : installe le point d'accès Wi-Fi, le portail captif,
-  nginx et la galerie FastAPI sur le Raspberry Pi galerie.
-- `install-photomaton.sh` : configure la liaison Ethernet et le service de
-  synchronisation des photos sur le Raspberry Pi photomaton.
+## Requirements
 
-## Prérequis / Requirements
+- Two Raspberry Pis connected directly by Ethernet.
+- Raspberry Pi OS Bookworm or another NetworkManager-compatible version.
+- A local user with `sudo` privileges on each Pi.
+- A photobooth that already produces `.jpg`, `.jpeg`, or `.png` files.
+- The scripts must be run with `sudo` from a regular user account, not from a
+  root login.
 
-- Deux Raspberry Pi reliés directement par Ethernet.
-- Raspberry Pi OS Bookworm ou version compatible avec NetworkManager.
-- Un utilisateur local avec les droits `sudo` sur chaque Pi.
-- Le photomaton doit déjà produire des fichiers `.jpg`, `.jpeg` ou `.png`.
-- Les scripts doivent être lancés avec `sudo` depuis un compte utilisateur normal
-  (et non depuis une session directement ouverte en `root`).
-
-You need two Raspberry Pis connected directly with Ethernet, Raspberry Pi OS
-Bookworm (or a NetworkManager-compatible version), a local `sudo` user on each
-Pi, and a photobooth that already creates `.jpg`, `.jpeg`, or `.png` files.
-Run the scripts with `sudo` from a regular user account, not from a root login.
-
-## Installation / Installation
+## Installation
 
 Clone the repository or copy the two scripts to both Raspberry Pis:
 
@@ -61,50 +48,51 @@ cd Photobooth-Galery
 chmod +x install-galerie.sh install-photomaton.sh
 ```
 
-### 1. Raspberry Pi galerie / Gallery Raspberry Pi
+### 1. Gallery Raspberry Pi
 
-Run this on the Pi that will host the gallery:
+Run this on the Raspberry Pi that will host the gallery:
 
 ```bash
 sudo SSID="Photomaton" ./install-galerie.sh
 ```
 
-For a protected Wi-Fi network:
+For a password-protected Wi-Fi network:
 
 ```bash
-sudo SSID="Photomaton" WIFI_PASS="choisir-un-mot-de-passe" ./install-galerie.sh
+sudo SSID="Photomaton" WIFI_PASS="choose-a-password" ./install-galerie.sh
 ```
 
 At the end, `wlan0` becomes an access point and `eth0` receives the fixed
-address `192.168.50.1`. An SSH connection made through the old Ethernet
-configuration will normally be disconnected; this is expected. Reconnect over
-the new Wi-Fi at `http://192.168.4.1/` or through SSH at:
+address `192.168.50.1`. An SSH connection using the previous Ethernet
+configuration will normally be disconnected. This is expected.
+
+Reconnect through the new Wi-Fi network at `http://192.168.4.1/`, or use SSH:
 
 ```bash
-ssh <utilisateur-galerie>@192.168.4.1
+ssh <gallery-user>@192.168.4.1
 ```
 
 The gallery stores received photos in `/srv/galerie/photos`.
 
-### 2. Raspberry Pi photomaton / Photobooth Raspberry Pi
+### 2. Photobooth Raspberry Pi
 
-Connect the Ethernet cable, then run this on the photobooth Pi. Replace the
-placeholders with the local account used on the gallery and the actual directory
-containing the final photos:
+Connect the Ethernet cable, then run this on the photobooth Raspberry Pi.
+Replace the placeholders with the local gallery account and the directory that
+contains the final photos:
 
 ```bash
-sudo GALERIE_USER="<utilisateur-galerie>" \
-  PHOTO_DIR="/chemin/vers/les/photos" \
+sudo GALERIE_USER="<gallery-user>" \
+  PHOTO_DIR="/path/to/photos" \
   ./install-photomaton.sh
 ```
 
-Optional network parameters are available:
+Optional network parameters can be specified explicitly:
 
 ```bash
-sudo GALERIE_USER="<utilisateur-galerie>" \
+sudo GALERIE_USER="<gallery-user>" \
   GALERIE_HOST="192.168.50.1" \
   P2P_IP="192.168.50.2/24" \
-  PHOTO_DIR="/chemin/vers/les/photos" \
+  PHOTO_DIR="/path/to/photos" \
   ./install-photomaton.sh
 ```
 
@@ -112,7 +100,7 @@ The script creates a dedicated SSH key at `~/.ssh/id_galerie`. The gallery
 user's password is requested once by `ssh-copy-id`; subsequent transfers do not
 need a password.
 
-## Utilisation / Usage
+## Usage
 
 1. Connect phones to the Wi-Fi network defined by `SSID`.
 2. Open `http://192.168.4.1/` if the captive portal does not open automatically.
@@ -122,13 +110,13 @@ need a password.
 The `photo-sync` service synchronizes at startup, when a file is completed, and
 at least every 30 seconds. It does not delete files from the gallery.
 
-La galerie est locale : le Pi galerie n'a normalement pas besoin d'un accès
-Internet. Avec un réseau Wi-Fi ouvert, toute personne à portée peut consulter
-les photos ; utilisez `WIFI_PASS` si elles doivent rester privées.
+The gallery is local and normally does not need Internet access. With an open
+Wi-Fi network, anyone within range can view the photos. Use `WIFI_PASS` if the
+photos must remain private.
 
-## Vérifications et dépannage / Checks and troubleshooting
+## Checks and troubleshooting
 
-On the photobooth Pi:
+On the photobooth Raspberry Pi:
 
 ```bash
 systemctl is-active photo-sync
@@ -138,7 +126,7 @@ ping -c3 192.168.50.1
 cat /etc/photo-sync.conf
 ```
 
-On the gallery Pi:
+On the gallery Raspberry Pi:
 
 ```bash
 systemctl status galerie nginx --no-pager
@@ -149,36 +137,34 @@ ls -lt /srv/galerie/photos | head
 curl -sI http://192.168.4.1/ | head -1
 ```
 
-If no photo is synchronized, check that `PHOTO_DIR` exists and that the image
-files are directly in that directory. If the service is active but the gallery
-is empty, check `journalctl -u galerie` and confirm that the files are present in
-`/srv/galerie/photos`.
+If no photo is synchronized, check that `PHOTO_DIR` exists and that image
+files are directly inside that directory. If the service is active but the
+gallery is empty, check `journalctl -u galerie` and confirm that files are
+present in `/srv/galerie/photos`.
 
-Si le portail ne s'ouvre pas automatiquement, connectez-vous manuellement à
-`http://192.168.4.1/`. Les sites HTTPS ne peuvent pas être redirigés par un
-portail captif, ce qui est normal.
+If the captive portal does not open automatically, connect manually to
+`http://192.168.4.1/`. HTTPS websites cannot be redirected by a captive portal;
+this is expected.
 
-## Désinstallation / Uninstallation
+## Uninstallation
 
 The scripts do not provide an automatic uninstall command. To stop the main
 services:
 
 ```bash
-# Sur le Pi galerie / On the gallery Pi
+# On the gallery Raspberry Pi
 sudo systemctl disable --now galerie nginx
 sudo nmcli con delete hotspot
 sudo nmcli con delete p2p-photomaton
 
-# Sur le Pi photomaton / On the photobooth Pi
+# On the photobooth Raspberry Pi
 sudo systemctl disable --now photo-sync
 sudo nmcli con delete p2p-galerie
 ```
 
-Review the NetworkManager profiles before deleting them if the Pis use another
-network configuration.
+Review the NetworkManager profiles before deleting them if the Raspberry Pis
+use another network configuration.
 
-## Licence / License
-
-Aucune licence spécifique n'est déclarée pour le moment.
+## License
 
 No specific license has been declared yet.
