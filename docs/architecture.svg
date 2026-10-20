@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 620" role="img" aria-labelledby="title desc">
+  <title id="title">Photobooth gallery system architecture</title>
+  <desc id="desc">A photobooth Raspberry Pi sends photos by Ethernet to a gallery Raspberry Pi, which serves them over Wi-Fi to phones.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f8fafc"/>
+      <stop offset="1" stop-color="#eef2ff"/>
+    </linearGradient>
+    <linearGradient id="booth" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2563eb"/>
+      <stop offset="1" stop-color="#1d4ed8"/>
+    </linearGradient>
+    <linearGradient id="gallery" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7c3aed"/>
+      <stop offset="1" stop-color="#6d28d9"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#0f172a" flood-opacity="0.12"/>
+    </filter>
+    <marker id="arrow-blue" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M0,0 L12,6 L0,12 Z" fill="#2563eb"/>
+    </marker>
+    <marker id="arrow-purple" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M0,0 L12,6 L0,12 Z" fill="#7c3aed"/>
+    </marker>
+  </defs>
+
+  <rect width="1200" height="620" rx="28" fill="url(#background)"/>
+  <text x="600" y="58" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="28" font-weight="700" fill="#0f172a">Photobooth Gallery System</text>
+  <text x="600" y="88" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="15" fill="#64748b">Private local network · automatic photo synchronization · captive Wi-Fi portal</text>
+
+  <!-- Ethernet link -->
+  <line x1="385" y1="292" x2="815" y2="292" stroke="#2563eb" stroke-width="8" stroke-linecap="round" marker-end="url(#arrow-blue)"/>
+  <rect x="475" y="254" width="250" height="52" rx="26" fill="#dbeafe" stroke="#93c5fd"/>
+  <text x="600" y="276" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="16" font-weight="700" fill="#1e40af">Dedicated Ethernet link</text>
+  <text x="600" y="296" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="13" fill="#1d4ed8">rsync / SSH · photos flow →</text>
+
+  <!-- Photobooth card -->
+  <g filter="url(#shadow)">
+    <rect x="70" y="135" width="315" height="315" rx="22" fill="#ffffff"/>
+    <rect x="70" y="135" width="315" height="82" rx="22" fill="url(#booth)"/>
+    <rect x="70" y="195" width="315" height="22" fill="url(#booth)"/>
+  </g>
+  <!-- Camera icon -->
+  <rect x="105" y="160" width="54" height="34" rx="7" fill="none" stroke="#ffffff" stroke-width="4"/>
+  <path d="M116 160 l8-9 h18 l8 9" fill="none" stroke="#ffffff" stroke-width="4" stroke-linejoin="round"/>
+  <circle cx="132" cy="177" r="9" fill="none" stroke="#ffffff" stroke-width="4"/>
+  <text x="180" y="174" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="22" font-weight="700" fill="#ffffff">Photobooth Pi</text>
+  <text x="98" y="255" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="18" font-weight="700" fill="#0f172a">Capture &amp; synchronization</text>
+  <circle cx="105" cy="294" r="5" fill="#2563eb"/>
+  <text x="121" y="300" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="15" fill="#334155">pibooth captures photos</text>
+  <circle cx="105" cy="330" r="5" fill="#2563eb"/>
+  <text x="121" y="336" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="15" fill="#334155">photo-sync service</text>
+  <circle cx="105" cy="366" r="5" fill="#2563eb"/>
+  <text x="121" y="372" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="15" fill="#334155">final images only</text>
+  <rect x="98" y="398" width="258" height="30" rx="8" fill="#eff6ff"/>
+  <text x="227" y="418" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Consolas,monospace" font-size="13" fill="#1d4ed8">eth0 · 192.168.50.2/24</text>
+
+  <!-- Gallery card -->
+  <g filter="url(#shadow)">
+    <rect x="500" y="135" width="315" height="315" rx="22" fill="#ffffff"/>
+    <rect x="500" y="135" width="315" height="82" rx="22" fill="url(#gallery)"/>
+    <rect x="500" y="195" width="315" height="22" fill="url(#gallery)"/>
+  </g>
+  <!-- Server icon -->
+  <rect x="535" y="153" width="50" height="42" rx="5" fill="none" stroke="#ffffff" stroke-width="4"/>
+  <line x1="544" y1="166" x2="576" y2="166" stroke="#ffffff" stroke-width="3"/>
+  <line x1="544" y1="180" x2="576" y2="180" stroke="#ffffff" stroke-width="3"/>
+  <circle cx="578" cy="166" r="2.5" fill="#ffffff"/>
+  <circle cx="578" cy="180" r="2.5" fill="#ffffff"/>
+  <text x="605" y="174" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="22" font-weight="700" fill="#ffffff">Gallery Pi</text>
+  <text x="528" y="255" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="18" font-weight="700" fill="#0f172a">Storage &amp; web gallery</text>
+  <circle cx="535" cy="294" r="5" fill="#7c3aed"/>
+  <text x="551" y="300" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="15" fill="#334155">stores incoming photos</text>
+  <circle cx="535" cy="330" r="5" fill="#7c3aed"/>
+  <text x="551" y="336" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="15" fill="#334155">creates thumbnails</text>
+  <circle cx="535" cy="366" r="5" fill="#7c3aed"/>
+  <text x="551" y="372" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="15" fill="#334155">FastAPI + nginx</text>
+  <rect x="528" y="398" width="258" height="30" rx="8" fill="#f5f3ff"/>
+  <text x="657" y="418" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Consolas,monospace" font-size="13" fill="#6d28d9">eth0 · 192.168.50.1/24</text>
+
+  <!-- Wi-Fi link -->
+  <path d="M815 292 C900 292 900 215 930 215" fill="none" stroke="#7c3aed" stroke-width="7" stroke-linecap="round" marker-end="url(#arrow-purple)"/>
+  <rect x="832" y="235" width="122" height="44" rx="22" fill="#ede9fe" stroke="#c4b5fd"/>
+  <text x="893" y="263" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="15" font-weight="700" fill="#6d28d9">Wi-Fi AP</text>
+
+  <!-- Phones -->
+  <g filter="url(#shadow)">
+    <rect x="930" y="135" width="200" height="315" rx="22" fill="#ffffff"/>
+  </g>
+  <text x="1030" y="179" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="20" font-weight="700" fill="#0f172a">Guests</text>
+  <text x="1030" y="204" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="14" fill="#64748b">browse &amp; download</text>
+  <!-- Phone 1 -->
+  <rect x="963" y="240" width="55" height="100" rx="9" fill="#0f172a"/>
+  <rect x="969" y="250" width="43" height="70" rx="3" fill="#ede9fe"/>
+  <circle cx="990" cy="330" r="4" fill="#cbd5e1"/>
+  <circle cx="990" cy="272" r="9" fill="#a78bfa"/>
+  <path d="M976 307 q14-20 28 0" fill="none" stroke="#7c3aed" stroke-width="4"/>
+  <!-- Phone 2 -->
+  <rect x="1040" y="240" width="55" height="100" rx="9" fill="#0f172a"/>
+  <rect x="1046" y="250" width="43" height="70" rx="3" fill="#dbeafe"/>
+  <circle cx="1068" cy="330" r="4" fill="#cbd5e1"/>
+  <circle cx="1068" cy="272" r="9" fill="#60a5fa"/>
+  <path d="M1053 307 q15-20 29 0" fill="none" stroke="#2563eb" stroke-width="4"/>
+  <text x="1030" y="385" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="14" fill="#475569">http://192.168.4.1</text>
+  <rect x="958" y="398" width="145" height="30" rx="8" fill="#f5f3ff"/>
+  <text x="1030" y="418" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Consolas,monospace" font-size="13" fill="#6d28d9">wlan0 · 192.168.4.1/24</text>
+
+  <text x="600" y="540" text-anchor="middle" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="14" fill="#64748b">No Internet connection is required for normal operation</text>
+</svg>

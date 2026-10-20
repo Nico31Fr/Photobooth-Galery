@@ -6,11 +6,11 @@ Pi, which creates a Wi-Fi access point and displays the photos in a web gallery.
 
 ## How it works
 
-```text
-[Photobooth] -- Ethernet -- [Gallery] -- Wi-Fi -- [Phones]
-  pibooth                  access point + captive portal + web gallery
-  rsync/SSH  ------------> /srv/galerie/photos
-```
+![Photobooth gallery system architecture](docs/architecture.svg)
+
+The photobooth sends photos over the dedicated Ethernet link. The gallery Pi
+stores them, generates thumbnails, and serves them to phones connected to its
+Wi-Fi access point.
 
 | Device | Interface | Address | Role |
 |---|---|---|---|
