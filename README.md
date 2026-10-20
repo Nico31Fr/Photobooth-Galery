@@ -140,7 +140,8 @@ On the gallery Raspberry Pi:
 systemctl status galerie nginx --no-pager
 journalctl -u galerie -n 30 --no-pager
 nmcli con show --active
-ip -br addr show eth0 wlan0
+ip -br addr show dev eth0
+ip -br addr show dev wlan0
 ls -lt /srv/galerie/photos | head
 curl -sI http://192.168.4.1/ | head -1
 ```

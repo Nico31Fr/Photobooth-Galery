@@ -36,7 +36,7 @@ install -d -o "$ADMIN" -g "$ADMIN" "$ROOT" "$ROOT/photos" "$ROOT/thumbs" "$ROOT/
 
 echo "==> Application web (FastAPI)"
 sudo -u "$ADMIN" python3 -m venv "$APP/venv"
-sudo -u "$ADMIN" "$APP/venv/bin/pip" install --quiet fastapi uvicorn pillow python-multipart
+sudo -u "$ADMIN" "$APP/venv/bin/pip" install --quiet fastapi uvicorn pillow
 
 cat > /etc/galerie.conf <<EOF
 GALERIE_PIN_HASH=$PIN_HASH
@@ -51,8 +51,9 @@ import threading
 import time
 from contextlib import asynccontextmanager
 from pathlib import Path
+from urllib.parse import parse_qs
 
-from fastapi import FastAPI, Form
+from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from PIL import Image, ImageOps
 
@@ -150,7 +151,6 @@ h1{font-size:1.1rem;text-align:center;padding:14px;margin:0}
     font-size:1rem;text-decoration:none}
 </style></head><body>
 <h1>Photomaton</h1>
-<p style="text-align:center"><a href="/admin" style="color:#aaa">Administration</a></p>
 <div id="grid"></div>
 <div id="lb"><img id="big">
   <div><a id="dl">Télécharger</a> <button id="x">Fermer</button></div></div>
@@ -224,7 +224,8 @@ def admin():
 
 
 @app.post("/admin/clear", response_class=HTMLResponse)
-def clear(pin: str = Form("")):
+async def clear(request: Request):
+    pin = parse_qs((await request.body()).decode()).get("pin", [""])[0]
     supplied_hash = hashlib.sha256(pin.encode()).hexdigest()
     if not PIN_HASH or not secrets.compare_digest(supplied_hash, PIN_HASH):
         return HTMLResponse("<h1>PIN incorrect</h1><p><a href='/admin'>Réessayer</a></p>", status_code=403)
