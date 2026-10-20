@@ -26,6 +26,7 @@ automatically generates thumbnails and display-sized images.
 
 - `install-galerie.sh`: installs the Wi-Fi access point, captive portal, nginx,
   and the FastAPI gallery on the gallery Raspberry Pi.
+- `install_galery_En.sh`: English version of the gallery installation script.
 - `install-photomaton.sh`: configures the Ethernet link and photo
   synchronization service on the photobooth Raspberry Pi.
 
