@@ -2,7 +2,7 @@
 # Pi "galerie" : point d'accès wifi + portail captif + galerie photo dynamique
 # Testé pour Raspberry Pi OS Bookworm (NetworkManager).
 #
-# Usage :  sudo SSID="Photomaton" ./install-galerie.sh
+# Usage :  sudo SSID="Photomaton" GALERIE_PIN="1234" ./install-galerie.sh
 #          (ajouter WIFI_PASS="motdepasse8car+" pour un wifi protégé, sinon réseau ouvert)
 #
 # ATTENTION : en fin de script, wlan0 devient un point d'accès et eth0 passe en IP fixe
@@ -16,6 +16,12 @@ trap '' HUP   # le script va au bout même si la session SSH est coupée
 ADMIN="${SUDO_USER:?Lance-le avec sudo depuis ton utilisateur normal}"
 SSID="${SSID:-Photomaton}"
 WIFI_PASS="${WIFI_PASS:-}"
+GALERIE_PIN="${GALERIE_PIN:-}"
+[[ "$GALERIE_PIN" =~ ^[0-9]{4,}$ ]] || {
+    echo "GALERIE_PIN doit contenir au moins 4 chiffres" >&2
+    exit 1
+}
+PIN_HASH="$(printf '%s' "$GALERIE_PIN" | sha256sum | awk '{print $1}')"
 AP_IP="192.168.4.1"          # IP de la galerie côté wifi (portail)
 P2P_IP="192.168.50.1/24"     # IP ajoutée sur eth0 pour la liaison point à point
 ROOT="/srv/galerie"
@@ -30,16 +36,23 @@ install -d -o "$ADMIN" -g "$ADMIN" "$ROOT" "$ROOT/photos" "$ROOT/thumbs" "$ROOT/
 
 echo "==> Application web (FastAPI)"
 sudo -u "$ADMIN" python3 -m venv "$APP/venv"
-sudo -u "$ADMIN" "$APP/venv/bin/pip" install --quiet fastapi uvicorn pillow
+sudo -u "$ADMIN" "$APP/venv/bin/pip" install --quiet fastapi uvicorn pillow python-multipart
+
+cat > /etc/galerie.conf <<EOF
+GALERIE_PIN_HASH=$PIN_HASH
+EOF
+chmod 600 /etc/galerie.conf
 
 cat > "$APP/app.py" <<'PYEOF'
+import hashlib
 import os
+import secrets
 import threading
 import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Form
 from fastapi.responses import HTMLResponse
 from PIL import Image, ImageOps
 
@@ -47,6 +60,8 @@ ROOT = Path(os.environ.get("GALERIE_ROOT", "/srv/galerie"))
 PHOTOS, THUMBS, VIEWS = ROOT / "photos", ROOT / "thumbs", ROOT / "views"
 EXT = {".jpg", ".jpeg", ".png"}
 index = {}  # nom du fichier original -> mtime
+index_lock = threading.Lock()
+PIN_HASH = os.environ.get("GALERIE_PIN_HASH", "")
 
 
 def make(src, dst, size, quality):
@@ -80,12 +95,14 @@ def scanner():
                         make(f.path, t, 480, 80)
                     if not v.exists():
                         make(f.path, v, 1600, 85)
-                    index[f.name] = f.stat().st_mtime
+                    with index_lock:
+                        index[f.name] = f.stat().st_mtime
                     seen.add(f.name)
                 except Exception as e:  # fichier incomplet ou illisible : on réessaie au prochain tour
                     print("skip", f.name, e, flush=True)
-            for name in set(index) - seen:
-                index.pop(name, None)
+            with index_lock:
+                for name in set(index) - seen:
+                    index.pop(name, None)
         except Exception as e:
             print("scan error", e, flush=True)
         time.sleep(2)
@@ -100,6 +117,21 @@ async def lifespan(app):
 
 
 app = FastAPI(lifespan=lifespan)
+
+
+def clear_gallery():
+    deleted = 0
+    for directory in (PHOTOS, THUMBS, VIEWS):
+        for item in directory.iterdir():
+            if item.is_file():
+                try:
+                    item.unlink()
+                    deleted += 1
+                except FileNotFoundError:
+                    pass
+    with index_lock:
+        index.clear()
+    return deleted
 
 PAGE = """<!doctype html>
 <html lang="fr"><head><meta charset="utf-8">
@@ -118,6 +150,7 @@ h1{font-size:1.1rem;text-align:center;padding:14px;margin:0}
     font-size:1rem;text-decoration:none}
 </style></head><body>
 <h1>Photomaton</h1>
+<p style="text-align:center"><a href="/admin" style="color:#aaa">Administration</a></p>
 <div id="grid"></div>
 <div id="lb"><img id="big">
   <div><a id="dl">Télécharger</a> <button id="x">Fermer</button></div></div>
@@ -127,6 +160,7 @@ const grid=document.getElementById('grid'), lb=document.getElementById('lb'),
 const known=new Set();
 function add(p){
   const im=new Image();
+  im.dataset.name=p.n;
   im.src='/thumbs/'+encodeURIComponent(p.s)+'.jpg';
   im.onclick=()=>{
     big.src='/views/'+encodeURIComponent(p.s)+'.jpg';
@@ -139,6 +173,13 @@ function add(p){
 async function poll(){
   try{
     const list=await (await fetch('/api/photos')).json();
+    const current=new Set(list.map(p=>p.n));
+    [...known].forEach(n=>{
+      if(!current.has(n)){
+        [...grid.querySelectorAll('img')].filter(im=>im.dataset.name===n).forEach(im=>im.remove());
+        known.delete(n);
+      }
+    });
     list.slice().reverse().forEach(p=>{ if(!known.has(p.n)){ known.add(p.n); add(p); } });
   }catch(e){}
 }
@@ -154,8 +195,44 @@ def home():
 
 @app.get("/api/photos")
 def photos():
-    items = sorted(list(index.items()), key=lambda kv: kv[1], reverse=True)
+    with index_lock:
+        items = sorted(list(index.items()), key=lambda kv: kv[1], reverse=True)
     return [{"n": n, "s": Path(n).stem, "t": t} for n, t in items]
+
+
+ADMIN_PAGE = """<!doctype html>
+<html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Administration - Photomaton</title>
+<style>body{margin:0;background:#111;color:#eee;font-family:system-ui,sans-serif;text-align:center;padding:24px}
+form{max-width:360px;margin:30px auto;padding:20px;background:#222;border-radius:10px}
+input,button{font-size:1rem;padding:10px;border-radius:8px;border:0;margin:5px}
+button{color:#fff;background:#a22}a{color:#aaa}</style></head><body>
+<h1>Administration</h1>
+<p>Vider les photos, miniatures et versions d'affichage de la galerie.</p>
+<form method="post" action="/admin/clear" onsubmit="return confirm('Supprimer toutes les photos de la galerie ?')">
+  <label>PIN : <input name="pin" type="password" inputmode="numeric" required></label><br>
+  <button type="submit">Vider la galerie</button>
+</form>
+<p><a href="/">Retour à la galerie</a></p>
+</body></html>"""
+
+
+@app.get("/admin", response_class=HTMLResponse)
+def admin():
+    return ADMIN_PAGE
+
+
+@app.post("/admin/clear", response_class=HTMLResponse)
+def clear(pin: str = Form("")):
+    supplied_hash = hashlib.sha256(pin.encode()).hexdigest()
+    if not PIN_HASH or not secrets.compare_digest(supplied_hash, PIN_HASH):
+        return HTMLResponse("<h1>PIN incorrect</h1><p><a href='/admin'>Réessayer</a></p>", status_code=403)
+    deleted = clear_gallery()
+    return HTMLResponse(
+        f"<h1>Galerie vidée</h1><p>{deleted} fichier(s) supprimé(s).</p>"
+        "<p><a href='/'>Retour à la galerie</a></p>"
+    )
 PYEOF
 chown "$ADMIN":"$ADMIN" "$APP/app.py"
 
@@ -167,6 +244,7 @@ After=network.target
 [Service]
 User=$ADMIN
 WorkingDirectory=$APP
+EnvironmentFile=/etc/galerie.conf
 ExecStart=$APP/venv/bin/uvicorn app:app --host 127.0.0.1 --port 8000 --no-access-log
 Restart=always
 
@@ -206,7 +284,8 @@ ln -sf /etc/nginx/sites-available/galerie /etc/nginx/sites-enabled/galerie
 nginx -t
 
 systemctl daemon-reload
-systemctl enable --now galerie.service
+systemctl enable galerie.service
+systemctl restart galerie.service
 systemctl enable nginx
 systemctl restart nginx
 
@@ -245,6 +324,7 @@ cat <<MSG
 Terminé.
   - Wifi : « $SSID » (portail : http://$AP_IP/)
   - Photos reçues dans : $ROOT/photos
+  - Administration : http://$AP_IP/admin (PIN demandé)
   - Liaison photomaton : eth0 = ${P2P_IP%/*}
   - SSH : via le wifi « $SSID » -> ssh $ADMIN@$AP_IP ; depuis le photomaton -> ssh $ADMIN@${P2P_IP%/*}
 

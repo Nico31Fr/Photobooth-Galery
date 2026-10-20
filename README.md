@@ -56,13 +56,13 @@ chmod +x install-galerie.sh install-photomaton.sh
 Run this on the Raspberry Pi that will host the gallery:
 
 ```bash
-sudo SSID="Photobooth" ./install-galerie.sh
+sudo SSID="Photobooth" GALERIE_PIN="1234" ./install-galerie.sh
 ```
 
 For a password-protected Wi-Fi network:
 
 ```bash
-sudo SSID="Photobooth" WIFI_PASS="choose-a-password" ./install-galerie.sh
+sudo SSID="Photobooth" WIFI_PASS="choose-a-password" GALERIE_PIN="1234" ./install-galerie.sh
 ```
 
 At the end, `wlan0` becomes an access point and `eth0` receives the fixed
@@ -109,9 +109,14 @@ need a password.
 2. Open `http://192.168.4.1/` if the captive portal does not open automatically.
 3. Take photos with the photobooth. They should appear in the gallery after the
    transfer and thumbnail generation, usually within a few seconds.
+4. To empty the gallery between events, open `http://192.168.4.1/admin`, enter
+   the PIN supplied during installation, and confirm the deletion.
 
 The `photo-sync` service synchronizes at startup, when a file is completed, and
 at least every 30 seconds. It does not delete files from the gallery.
+
+The gallery PIN is stored as a hash in `/etc/galerie.conf`; the PIN itself is not
+written to the Raspberry Pi.
 
 The gallery is local and normally does not need Internet access. With an open
 Wi-Fi network, anyone within range can view the photos. Use `WIFI_PASS` if the
