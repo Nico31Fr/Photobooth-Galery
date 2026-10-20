@@ -56,13 +56,13 @@ chmod +x install-galerie.sh install-photomaton.sh
 Run this on the Raspberry Pi that will host the gallery:
 
 ```bash
-sudo SSID="Photomaton" ./install-galerie.sh
+sudo SSID="Photobooth" ./install-galerie.sh
 ```
 
 For a password-protected Wi-Fi network:
 
 ```bash
-sudo SSID="Photomaton" WIFI_PASS="choose-a-password" ./install-galerie.sh
+sudo SSID="Photobooth" WIFI_PASS="choose-a-password" ./install-galerie.sh
 ```
 
 At the end, `wlan0` becomes an access point and `eth0` receives the fixed
